@@ -1,0 +1,61 @@
+# Copyright 2026 The MathWorks, Inc.
+
+name: "Bug Report"
+title: "<Enter short description>"
+description: "File a bug report."
+labels: [bug, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before reporting a bug, see [Issues](https://github.com/matlab/terminal-in-matlab/issues) to check if an issue already exists for the bug you encountered. To request an enhancement, return to [Create an Issue](https://github.com/matlab/terminal-in-matlab/issues/new/choose).
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is the problem?
+      description: A clear and concise description of what the bug is.
+
+  - type: textarea
+    id: expectation
+    attributes:
+      label: What behavior were you expecting?
+      description: What did you expect to happen?
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: What happened instead?
+      description: What actually happened? Include any error messages.
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to reproduce the issue
+      description: Provide a sequence of steps to reproduce the issue.
+      placeholder: |
+        1. Run `t = terminal()`
+        2. Run `t.Theme = "dracula"`
+        3. ...
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: MATLAB version, OS, environment (Desktop/Online/Container/Proxy), toolbox version (`terminal.version()`).
+      placeholder: |
+        - MATLAB: R2024b
+        - OS: Windows 11
+        - Environment: Desktop
+        - Toolbox version: 0.15.0
+
+  - type: textarea
+    id: suggested-fix
+    attributes:
+      label: Suggested fix (if any)
+
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Any additional information
+      description: Add any other context, screenshots, or logs about the problem here.

@@ -1,0 +1,75 @@
+# Copyright 2026 The MathWorks, Inc.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test-server:
+    name: Test Go Server (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.21'
+          cache: false
+
+      - name: Test
+        run: go test -v -count=1 ./...
+
+  build-server:
+    name: Build Go Server (${{ matrix.matlab_arch }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            matlab_arch: glnxa64
+            binary: matlab-terminal-server
+          - goos: darwin
+            goarch: amd64
+            matlab_arch: maci64
+            binary: matlab-terminal-server
+          - goos: darwin
+            goarch: arm64
+            matlab_arch: maca64
+            binary: matlab-terminal-server
+          - goos: windows
+            goarch: amd64
+            matlab_arch: win64
+            binary: matlab-terminal-server.exe
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.21'
+          cache: false
+
+      - name: Vet
+        run: GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go vet ./...
+
+      - name: Build
+        run: |
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
+            go build -ldflags="-s -w" \
+            -o ../dist/${{ matrix.matlab_arch }}/${{ matrix.binary }} .

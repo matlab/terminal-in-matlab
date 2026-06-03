@@ -1,0 +1,26 @@
+# Build output
+dist/
+
+# Generated assets (rebuilt by build/build_assets.m)
+toolbox/web_assets.mat
+
+# Compiled Go binary
+server/matlab-terminal-server
+server/matlab-terminal-server.exe
+
+# Go build cache
+server/vendor/
+
+# npm artifacts (from build/setup_xterm.sh)
+node_modules/
+package-lock.json
+
+# MATLAB artifacts
+*.asv
+*.autosave
+
+# Test output
+test-results/
+
+# AI
+.claude/

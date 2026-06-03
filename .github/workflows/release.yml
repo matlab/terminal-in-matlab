@@ -1,0 +1,146 @@
+# Copyright 2026 The MathWorks, Inc.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+env:
+  MLM_LICENSE_TOKEN: ${{ secrets.MLM_LICENSE_TOKEN }}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build All Artifacts
+    runs-on: ubuntu-latest
+    outputs:
+      digests: ${{ steps.checksums.outputs.digests }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.21"
+          cache: false
+
+      - name: Cross-compile Go server
+        working-directory: server
+        run: |
+          platforms=(
+            "linux   amd64 glnxa64 matlab-terminal-server"
+            "darwin  amd64 maci64  matlab-terminal-server"
+            "darwin  arm64 maca64  matlab-terminal-server"
+            "windows amd64 win64   matlab-terminal-server.exe"
+          )
+          for entry in "${platforms[@]}"; do
+            read -r goos goarch arch binary <<< "$entry"
+            mkdir -p ../dist/$arch
+            echo "Building $goos/$goarch -> dist/$arch/$binary"
+            GOOS=$goos GOARCH=$goarch \
+              go build -ldflags="-s -w" \
+              -o ../dist/$arch/$binary .
+          done
+          chmod +x ../dist/*/matlab-terminal-server 2>/dev/null || true
+          echo "--- dist/ layout ---"
+          find ../dist -type f
+
+      - name: Set up MATLAB
+        uses: matlab-actions/setup-matlab@v3
+
+      - name: Build .mltbx
+        uses: matlab-actions/run-command@v3
+        with:
+          command: addpath('build'); package("${{ github.ref_name }}")
+
+      - name: Compute checksums
+        id: checksums
+        run: |
+          # Collect all release artifacts.
+          mkdir -p release-assets
+          cp dist/glnxa64/matlab-terminal-server  release-assets/matlab-terminal-server-glnxa64
+          cp dist/maci64/matlab-terminal-server   release-assets/matlab-terminal-server-maci64
+          cp dist/maca64/matlab-terminal-server    release-assets/matlab-terminal-server-maca64
+          cp dist/win64/matlab-terminal-server.exe release-assets/matlab-terminal-server-win64.exe
+          cp dist/Terminal.mltbx                   release-assets/Terminal.mltbx
+
+          # Generate checksums file for the release.
+          cd release-assets
+          sha256sum * > checksums.txt
+          cat checksums.txt
+
+          # Base64-encoded digests for SLSA provenance generator.
+          digests=$(sha256sum * | base64 -w0)
+          echo "digests=$digests" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-assets
+          path: release-assets/
+
+  provenance:
+    name: Generate SLSA Provenance
+    needs: build
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    with:
+      base64-subjects: "${{ needs.build.outputs.digests }}"
+      upload-assets: true
+      private-repository: true
+
+  release:
+    name: Create GitHub Release
+    needs: [build, provenance]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download release assets
+        uses: actions/download-artifact@v8
+        with:
+          name: release-assets
+          path: release-assets/
+
+      - name: Generate release notes
+        run: |
+          PREV_TAG=$(git tag --sort=-version:refname | grep -v "^${GITHUB_REF_NAME}$" | head -1)
+          if [ -n "$PREV_TAG" ]; then
+            RANGE="${PREV_TAG}..${GITHUB_REF_NAME}"
+          else
+            RANGE="${GITHUB_REF_NAME}"
+          fi
+          {
+            git log --pretty=format:"- %s" "$RANGE"
+            echo ""
+            echo ""
+            echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV_TAG:-$(git rev-list --max-parents=0 HEAD)}...${GITHUB_REF_NAME}"
+          } > release_notes.md
+
+      - name: Determine release type
+        id: release-type
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          # Anything with a hyphen after the version (e.g. -rc1, -beta2, -pr42)
+          # is a prerelease per semver convention.
+          if [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-.+ ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: release-assets/*
+          body_path: release_notes.md
+          generate_release_notes: true
+          prerelease: ${{ steps.release-type.outputs.prerelease }}

@@ -1,0 +1,95 @@
+{
+  "tools": [
+    {
+      "name": "matlab_editor_list",
+      "title": "List MATLAB Editor Documents",
+      "description": "List all files currently open in the MATLAB editor with their filenames and modification status.",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "matlab_editor_active",
+      "title": "Get Active MATLAB Editor Document",
+      "description": "Get the active (focused) MATLAB editor document, including filename, modification status, selection region, and selected text.",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "matlab_editor_selection",
+      "title": "Get Selected MATLAB Editor Text",
+      "description": "Get the text currently highlighted in the active MATLAB editor document.",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "matlab_editor_read",
+      "title": "Read MATLAB Editor Document",
+      "description": "Read the contents of a file open in the MATLAB editor. Reflects unsaved edits. If no name is provided, reads the active file. Supports partial name matching.",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "File name or partial path to match. If omitted, reads the active file."
+          }
+        }
+      }
+    }
+  ],
+  "signatures": {
+    "matlab_editor_list": {
+      "function": "terminaltools.matlab_editor_list",
+      "input": {
+        "order": []
+      }
+    },
+    "matlab_editor_active": {
+      "function": "terminaltools.matlab_editor_active",
+      "input": {
+        "order": []
+      }
+    },
+    "matlab_editor_selection": {
+      "function": "terminaltools.matlab_editor_selection",
+      "input": {
+        "order": []
+      }
+    },
+    "matlab_editor_read": {
+      "function": "terminaltools.matlab_editor_read",
+      "input": {
+        "order": ["name"]
+      }
+    }
+  }
+}
