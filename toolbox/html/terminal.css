@@ -2,10 +2,10 @@
 
 /* CSS Custom Properties for theming */
 :root {
-    --bg-color: #1e1e1e;
+    --bg-color: #121212;
     --fg-color: #d4d4d4;
     --tab-bg: #2d2d2d;
-    --tab-bg-active: #1e1e1e;
+    --tab-bg-active: #121212;
     --tab-border: #3e3e3e;
     --tab-fg: #969696;
     --tab-fg-active: #ffffff;

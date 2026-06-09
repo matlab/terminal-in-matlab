@@ -634,7 +634,7 @@
 
             var defaultStandaloneTheme = {
                 isDark: true,
-                background: '#1e1e1e',
+                background: '#121212',
                 foreground: '#d4d4d4',
                 cursor: '#ffffff',
                 fontFamily: 'Consolas, monospace',
@@ -810,10 +810,10 @@
             function buildXtermTheme(theme) {
                 if (!theme) return {};
                 var xt = {
-                    background: theme.background || '#1e1e1e',
+                    background: theme.background || '#121212',
                     foreground: theme.foreground || '#d4d4d4',
                     cursor: theme.cursor || '#ffffff',
-                    cursorAccent: theme.cursorAccent || theme.background || '#1e1e1e',
+                    cursorAccent: theme.cursorAccent || theme.background || '#121212',
                     selectionBackground: theme.selectionBackground || '#264f78'
                 };
                 var ansiKeys = [

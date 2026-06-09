@@ -98,7 +98,7 @@ All fields are optional. Values must be `'#rrggbb'` hex color strings.
 
 | Field                 | Description                                | Default (from `"dark"` preset) |
 | --------------------- | ------------------------------------------ | ------------------------------ |
-| `background`          | Terminal background                        | `'#1e1e1e'`                    |
+| `background`          | Terminal background                        | `'#121212'`                    |
 | `foreground`          | Default text color                         | `'#d4d4d4'`                    |
 | `cursor`              | Cursor color                               | `'#aeafad'`                    |
 | `cursorAccent`        | Cursor text color (character under cursor) | Same as `background`           |
