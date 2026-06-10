@@ -74,7 +74,7 @@ jobs:
             go build -ldflags="-s -w" \
             -o ../dist/${{ matrix.matlab_arch }}/${{ matrix.binary }} .
   matlab-tests:
-    needs: test-server
+    needs: build-server
     runs-on: ubuntu-latest
     steps:
       - uses: matlab-actions/setup-matlab@v3
