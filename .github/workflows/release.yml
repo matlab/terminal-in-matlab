@@ -48,9 +48,9 @@ jobs:
         uses: matlab-actions/setup-matlab@v3
 
       - name: Build .mltbx
-        uses: matlab-actions/run-command@v3
+        uses: matlab-actions/run-build@v3
         with:
-          command: addpath('build'); package("${{ github.ref_name }}")
+          tasks: check, test, package("${{ github.ref_name }}")
 
       - name: Compute checksums
         id: checksums
