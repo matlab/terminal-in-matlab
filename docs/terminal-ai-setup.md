@@ -16,6 +16,8 @@ t = terminal(Agentic=true);
 
 % Or skip the wizard by specifying everything directly
 t = terminal(Agent="claude");
+t = terminal(Agent="copilot");
+t = terminal(Agent="codex");
 t = terminal(Agent="gemini", Toolkits=["matlab","simulink"]);
 ```
 
@@ -37,22 +39,26 @@ You do not need to reset or uninstall anything to change agents or add toolkits.
 
 | Agent | How Terminal registers |
 | ----- | --------------------- |
-| Claude | CLI command pre-populated in terminal |
+| Claude | Runs `claude mcp add` via CLI |
+| Copilot | Writes to `~/.copilot/mcp-config.json` |
+| Codex | Runs `codex mcp add` via CLI (falls back to `~/.codex/config.json`) |
 | Gemini | Writes to `~/.gemini/settings.json` |
 | Amp | Writes to `~/.config/amp/settings.json` |
 
-### Custom Agent CLI (Claude only)
+### Custom Agent CLI (Claude and Codex)
 
-Claude requires running CLI commands during setup (e.g., `claude mcp add`, `claude plugin install`) because it does not use a static JSON configuration file. Gemini and Amp are configured by writing directly to their settings files, so they do not need a CLI path.
+Claude and Codex require running CLI commands during setup (e.g., `claude mcp add`, `codex mcp add`) because they do not use a static JSON configuration file. Copilot, Gemini, and Amp are configured by writing directly to their settings files, so they do not need a CLI path.
 
-If your Claude binary has a non-standard name or path, use the `AgentCLI` option so Terminal can find it:
+If your agent binary has a non-standard name or path, use the `AgentCLI` option so Terminal can find it:
 
 ```matlab
 t = terminal(Agent="claude", AgentCLI="/usr/local/bin/claude-dev");
-t = terminal(Agent="claude", AgentCLI="claude-code");
+t = terminal(Agent="codex", AgentCLI="/usr/local/bin/codex-dev");
 ```
 
-The custom CLI path is persisted in `config.json` and reused on subsequent runs. This option is ignored for non-Claude agents.
+The custom CLI path is persisted in `config.json` and reused on subsequent runs. This option is ignored for agents that use config-file registration.
+
+If the CLI command fails or is not found on `PATH`, Terminal falls back to writing the configuration file directly (`~/.claude.json` for Claude, `~/.codex/config.json` for Codex). No manual intervention is required.
 
 ## Toolkits
 

@@ -36,7 +36,7 @@ classdef (Sealed) terminal < handle
     %                   Simulink Agentic Toolkits, and registers with your AI
     %                   agent. First run prompts a setup wizard; preferences are
     %                   saved for subsequent runs. Default: false.
-    %     Agent       - "claude"|"codex"|"amp"|"gemini"
+    %     Agent       - "claude"|"codex"|"copilot"|"amp"|"gemini"
     %                   Skips the wizard. Implies Agentic=true.
     %     Toolkits    - ["matlab"] or ["matlab","simulink"] (default includes
     %                   Simulink when installed), or ["simulink"] alone
@@ -157,7 +157,7 @@ classdef (Sealed) terminal < handle
         % Agentic Toolkit constants
         AGENTIC_MATLAB_REPO = 'matlab/matlab-agentic-toolkit'
         AGENTIC_SIMULINK_REPO = 'matlab/simulink-agentic-toolkit'
-        AGENTIC_SUPPORTED_AGENTS = ["claude","codex","amp","gemini"]
+        AGENTIC_SUPPORTED_AGENTS = ["claude","codex","copilot","amp","gemini"]
     end
 
     methods
@@ -2256,8 +2256,8 @@ classdef (Sealed) terminal < handle
             fprintf('======================\n\n');
 
             % --- Agent selection ---
-            agents = ["claude", "codex", "amp", "gemini"];
-            labels = ["Claude Code", "OpenAI Codex CLI", "Sourcegraph Amp", "Gemini CLI"];
+            agents = ["claude", "codex", "copilot", "amp", "gemini"];
+            labels = ["Claude Code", "OpenAI Codex CLI", "GitHub Copilot", "Sourcegraph Amp", "Gemini CLI"];
             fprintf('Which AI agent are you using?\n');
             for i = 1:numel(agents)
                 fprintf('  [%d] %s\n', i, labels(i));
@@ -2697,17 +2697,8 @@ classdef (Sealed) terminal < handle
             home = terminal.userHome();
             switch agent
                 case "copilot"
-                    if ismac
-                        configFile = fullfile(home, 'Library', ...
-                            'Application Support', 'Code', 'User', 'mcp.json');
-                    elseif ispc
-                        configFile = fullfile(getenv('APPDATA'), ...
-                            'Code', 'User', 'mcp.json');
-                    else
-                        configFile = fullfile(home, '.config', ...
-                            'Code', 'User', 'mcp.json');
-                    end
-                    mcpKey = 'servers';
+                    configFile = fullfile(home, '.copilot', 'mcp-config.json');
+                    mcpKey = 'mcpServers';
                 case "gemini"
                     configFile = fullfile(home, '.gemini', 'settings.json');
                     mcpKey = 'mcpServers';
@@ -2737,6 +2728,7 @@ classdef (Sealed) terminal < handle
             );
             if agent == "copilot"
                 mcpEntry.type = 'stdio';
+                mcpEntry.tools = {'*'};
             end
 
             % Patch the MCP servers key with the matlab entry.
@@ -3213,18 +3205,8 @@ classdef (Sealed) terminal < handle
                     terminal.printSkillsUndoHint(home);
 
                 case "copilot"
-                    fprintf('  Remove "matlab" from "servers" in:\n');
-                    if ismac
-                        copilotConfig = fullfile(home, 'Library', ...
-                            'Application Support', 'Code', 'User', 'mcp.json');
-                    elseif ispc
-                        copilotConfig = fullfile(getenv('APPDATA'), ...
-                            'Code', 'User', 'mcp.json');
-                    else
-                        copilotConfig = fullfile(home, '.config', ...
-                            'Code', 'User', 'mcp.json');
-                    end
-                    fprintf('    %s\n', copilotConfig);
+                    fprintf('  Remove "matlab" from "mcpServers" in:\n');
+                    fprintf('    %s\n', fullfile(home, '.copilot', 'mcp-config.json'));
                     terminal.printSkillsUndoHint(home);
 
                 case "gemini"

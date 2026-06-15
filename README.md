@@ -34,7 +34,7 @@ Run a terminal in MATLAB®. Use the terminal to run command-line interface tools
 
 To use AI agents in the MATLAB terminal, you can use a wizard which sets up for you:
 
-- an AI agent such as Claude Code, Gemini, or Amp.
+- an AI agent such as Claude Code, GitHub Copilot, OpenAI Codex, Gemini, or Amp.
 - the [MATLAB MCP Core Server](https://github.com/matlab/matlab-mcp-core-server)
 - skills to help your AI agent use MATLAB and Simulink, from [MATLAB Agentic Toolkit (GitHub)](https://github.com/matlab/matlab-agentic-toolkit) and [Simulink Agentic Toolkit (GitHub)](https://github.com/matlab/simulink-agentic-toolkit)
 
@@ -49,6 +49,8 @@ You can also programmatically specify your agent and toolkits.
 
 ```
 t = terminal(Agent="claude");
+t = terminal(Agent="copilot");
+t = terminal(Agent="codex");
 t = terminal(Agent="gemini", Toolkits=["matlab","simulink"]);
 ```
 

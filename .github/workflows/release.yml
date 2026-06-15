@@ -6,6 +6,9 @@ on:
   push:
     tags: ["v*"]
 
+env:
+  MLM_LICENSE_TOKEN: ${{ secrets.MLM_LICENSE_TOKEN }}
+
 permissions:
   contents: write
 
@@ -88,6 +91,8 @@ jobs:
     with:
       base64-subjects: "${{ needs.build.outputs.digests }}"
       upload-assets: true
+      draft-release: true
+      private-repository: true
 
   release:
     name: Create GitHub Release
@@ -133,10 +138,23 @@ jobs:
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Create release
-        uses: softprops/action-gh-release@v3
-        with:
-          files: release-assets/*
-          body_path: release_notes.md
-          generate_release_notes: true
-          prerelease: ${{ steps.release-type.outputs.prerelease }}
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          PRERELEASE="${{ steps.release-type.outputs.prerelease }}"
+
+          # Upload assets to the existing draft release created by SLSA provenance
+          for f in release-assets/*; do
+            gh release upload "$TAG" "$f" --clobber
+          done
+
+          # Publish the draft release with notes and prerelease flag
+          ARGS=(--draft=false --notes-file release_notes.md)
+          if [ "$PRERELEASE" = "true" ]; then
+            ARGS+=(--prerelease)
+          else
+            ARGS+=(--prerelease=false)
+          fi
+          gh release edit "$TAG" "${ARGS[@]}"
