@@ -109,6 +109,7 @@ classdef (Sealed) terminal < handle
         HTMLComponent   % uihtml handle
         AuthToken       % random hex auth string
         ParentFigure    % figure or uifigure handle
+        UIToolbar       % uitoolbar for dock controls (MATLAB mode only)
         ServerBinary    % absolute path to the Go binary
         PollTimer       % timer object for polling server output
         PollSeq         % last sequence number received from server
@@ -625,15 +626,20 @@ classdef (Sealed) terminal < handle
 
             % --- Parent container ---
             if isempty(parent)
-                parent = uifigure('Name', options.Name, ...
-                    'Position', [100 100 800 500]);
+                parent = uifigure('Name', options.Name);
                 try
                     parent.WindowStyle = options.WindowStyle;
-                catch
-                    if options.WindowStyle == "docked"
-                        warning('Terminal:DockNotSupported', ...
-                            'Docked window style is not supported in this MATLAB release. Using normal window.');
+                    % Enable dock controls so the user can re-dock after undocking.
+                    if isprop(parent, 'DockControls')
+                        parent.DockControls = 'on';
                     end
+                    % Empty uitoolbar — its only purpose is to show the default dock
+                    % controls when the terminal is undocked.
+                    obj.UIToolbar = uitoolbar(parent, 'Visible', ...
+                    matlab.lang.OnOffSwitchState(options.WindowStyle ~= "docked"));
+                catch
+                    warning('Terminal:DockNotSupported', ...
+                        'Docked terminals are supported from MATLAB R2025a onwards.');
                 end
             end
             obj.ParentFigure = parent;
@@ -657,8 +663,7 @@ classdef (Sealed) terminal < handle
             obj.HTMLComponent.HTMLSource = htmlFile;
 
             % Auto-resize.
-            obj.ParentFigure.SizeChangedFcn = @(~,~) set(obj.HTMLComponent, ...
-                'Position', [0 0 obj.ParentFigure.Position(3) obj.ParentFigure.Position(4)]);
+            obj.ParentFigure.SizeChangedFcn = @(~,~) obj.onFigureResized();
 
             % Clean up when figure is closed.
             if isprop(obj.ParentFigure, 'CloseRequestFcn')
@@ -840,6 +845,16 @@ classdef (Sealed) terminal < handle
             obj.ThemeConfig = newConfig;
             obj.sendToJS(struct('type', 'theme', ...
                 'theme', newConfig));
+        end
+
+        function onFigureResized(obj)
+            %ONFIGURERESIZED Update uihtml size and sync dock toolbar visibility.
+            obj.HTMLComponent.Position = [0 0 obj.ParentFigure.Position(3) obj.ParentFigure.Position(4)];
+            % Toggle dock toolbar based on current WindowStyle.
+            if ~isempty(obj.UIToolbar) && isvalid(obj.UIToolbar)
+                isDocked = obj.ParentFigure.WindowStyle == "docked";
+                obj.UIToolbar.Visible = matlab.lang.OnOffSwitchState(~isDocked);
+            end
         end
 
         function onHTMLEvent(obj, event)
