@@ -32,7 +32,7 @@ classdef (Sealed) terminal < handle
     %                             cursor, selectionBackground, and ANSI colors
     %                             (black, red, green, ..., brightWhite)
     %     Agentic     - Full agent integration with MathWorks Agentic Toolkits.
-    %                   Sets up the MCP Core Server, downloads the MATLAB and/or
+    %                   Sets up the MCP Server, downloads the MATLAB and/or
     %                   Simulink Agentic Toolkits, and registers with your AI
     %                   agent. First run prompts a setup wizard; preferences are
     %                   saved for subsequent runs. Default: false.
@@ -152,9 +152,9 @@ classdef (Sealed) terminal < handle
         ENTER_KEY = char(13)       % CR — what a real terminal sends for Enter
         TOOLBOX_ID = '9e8f4a2b-3c1d-4e5f-a6b7-8c9d0e1f2a3b'
         GITHUB_REPO = 'matlab/terminal-in-matlab'
-        MCP_SERVER_BINARY = 'matlab-mcp-core-server'
-        MCP_SERVER_REPO = 'matlab/matlab-mcp-core-server'
-        MCP_MIN_SERVER_VERSION = '0.10.0'
+        MCP_SERVER_BINARY = 'matlab-mcp-server'
+        MCP_SERVER_REPO = 'matlab/matlab-mcp-server'
+        MCP_MIN_SERVER_VERSION = '0.11.0'
         % Agentic Toolkit constants
         AGENTIC_MATLAB_REPO = 'matlab/matlab-agentic-toolkit'
         AGENTIC_SIMULINK_REPO = 'matlab/simulink-agentic-toolkit'
@@ -1288,6 +1288,17 @@ classdef (Sealed) terminal < handle
             %   terminal.updateMCPServer()
 
             serverBin = terminal.mcpBinaryPath();
+            binDir = fileparts(serverBin);
+
+            % Clean up old-named binary from pre-v0.11.0 installations.
+            if ispc
+                legacyBin = fullfile(binDir, 'matlab-mcp-core-server.exe');
+            else
+                legacyBin = fullfile(binDir, 'matlab-mcp-core-server');
+            end
+            if isfile(legacyBin)
+                delete(legacyBin);
+            end
 
             % Check current version.
             currentVer = '';
@@ -1321,10 +1332,10 @@ classdef (Sealed) terminal < handle
             % Determine platform asset name.
             arch = computer('arch');
             switch arch
-                case 'glnxa64', assetSuffix = '-glnxa64';
-                case 'maca64',  assetSuffix = '-maca64';
-                case 'maci64',  assetSuffix = '-maci64';
-                case 'win64',   assetSuffix = '-win64.exe';
+                case 'glnxa64', assetSuffix = '-linux-x64';
+                case 'maca64',  assetSuffix = '-macos-arm64';
+                case 'maci64',  assetSuffix = '-macos-x64';
+                case 'win64',   assetSuffix = '-windows-x64.exe';
                 otherwise
                     error('Terminal:UnsupportedPlatform', ...
                         'Unsupported platform: %s', arch);
@@ -1879,12 +1890,12 @@ classdef (Sealed) terminal < handle
 
         function binPath = mcpBinaryPath()
             %MCPBINARYPATH Return the path for the MCP server binary.
-            %   ~/.matlab/agentic-toolkits/bin/matlab-mcp-core-server[.exe]
+            %   ~/.matlab/agentic-toolkits/bin/matlab-mcp-server[.exe]
             binDir = fullfile(terminal.agenticInstallRoot(), 'bin');
             if ispc
-                binPath = fullfile(binDir, 'matlab-mcp-core-server.exe');
+                binPath = fullfile(binDir, 'matlab-mcp-server.exe');
             else
-                binPath = fullfile(binDir, 'matlab-mcp-core-server');
+                binPath = fullfile(binDir, 'matlab-mcp-server');
             end
         end
 
@@ -1910,7 +1921,7 @@ classdef (Sealed) terminal < handle
             end
             cmd = sprintf('"%s" --setup-matlab --matlab-root="%s" %s 2>&1', ...
                 serverBin, matlabroot, stdinNull);
-            fprintf('Installing MATLAB MCP Core Server Toolbox...\n This may take a minute — please wait.\n');
+            fprintf('Installing MATLAB MCP Server Toolbox...\n This may take a minute — please wait.\n');
             [status, output] = system(cmd);
             if status ~= 0
                 warning('Terminal:SetupMatlabWarning', ...
@@ -1925,15 +1936,15 @@ classdef (Sealed) terminal < handle
             toolboxesDir = fileparts(fileparts(which('terminal')));
             listing = dir(toolboxesDir);
             names = {listing.name};
-            matches = ~cellfun(@isempty, regexp(names, '^MATLAB[_ ]MCP[_ ]Core[_ ]Server[_ ]Toolbox'));
+            matches = ~cellfun(@isempty, regexp(names, '^MATLAB[_ ]MCP[_ ]Server[_ ]Toolbox'));
             if any(matches)
                 matched = names(matches);
                 mcpToolboxDir = fullfile(toolboxesDir, matched{1});
                 addpath(mcpToolboxDir);
-                fprintf('MATLAB MCP Core Server Toolbox installed.\n');
+                fprintf('MATLAB MCP Server Toolbox installed.\n');
             else
                 error('Terminal:SetupMatlabFailed', ...
-                    'Unable to install the MATLAB MCP Core Server Toolbox.\n  The MCP server binary at:\n    %s\n  exited with code %d:\n    %s', ...
+                    'Unable to install the MATLAB MCP Server Toolbox.\n  The MCP server binary at:\n    %s\n  exited with code %d:\n    %s', ...
                     serverBin, status, strtrim(output));
             end
         end
@@ -1941,7 +1952,7 @@ classdef (Sealed) terminal < handle
         function connectionDetailsJSON = getSessionConnectionDetails()
             %GETSESSIONCONNECTIONDETAILS Get JSON for pinning MCP server to this MATLAB.
             %   Returns the JSON string for MW_MCP_SERVER_MATLAB_SESSION_CONNECTION_DETAILS
-            %   so the MCP core server connects to this specific MATLAB instance
+            %   so the MCP server connects to this specific MATLAB instance
             %   rather than relying on the global shareMATLABSession registry.
 
             if isMATLABReleaseOlderThan("R2023a")
@@ -1987,6 +1998,16 @@ classdef (Sealed) terminal < handle
                 delete(oldPath);
             end
 
+            % Clean up old-named binary from pre-v0.11.0 installations.
+            if ispc
+                legacyBin = fullfile(binDir, 'matlab-mcp-core-server.exe');
+            else
+                legacyBin = fullfile(binDir, 'matlab-mcp-core-server');
+            end
+            if isfile(legacyBin)
+                delete(legacyBin);
+            end
+
             % Check managed location.
             if isfile(serverBin)
                 if terminal.checkMCPServerVersion(serverBin)
@@ -2028,10 +2049,10 @@ classdef (Sealed) terminal < handle
             % Determine platform asset name.
             arch = computer('arch');
             switch arch
-                case 'glnxa64', assetSuffix = '-glnxa64';
-                case 'maca64',  assetSuffix = '-maca64';
-                case 'maci64',  assetSuffix = '-maci64';
-                case 'win64',   assetSuffix = '-win64.exe';
+                case 'glnxa64', assetSuffix = '-linux-x64';
+                case 'maca64',  assetSuffix = '-macos-arm64';
+                case 'maci64',  assetSuffix = '-macos-x64';
+                case 'win64',   assetSuffix = '-windows-x64.exe';
                 otherwise
                     error('Terminal:UnsupportedPlatform', ...
                         'Unsupported platform: %s', arch);
@@ -2151,7 +2172,7 @@ classdef (Sealed) terminal < handle
         end
 
         function release = fetchMCPRelease()
-            %FETCHMCPRELEASE Fetch the latest MCP Core Server release from GitHub.
+            %FETCHMCPRELEASE Fetch the latest MCP Server release from GitHub.
             %   On rate-limit or network failure, returns a synthetic release
             %   struct using the minimum supported version and direct download URLs.
             persistent cachedRelease
@@ -2178,7 +2199,7 @@ classdef (Sealed) terminal < handle
                     cachedRelease = release;
                 else
                     error('Terminal:MCPDownloadFailed', ...
-                        'Could not reach GitHub for MCP Core Server:\n  %s', me.message);
+                        'Could not reach GitHub for MCP Server:\n  %s', me.message);
                 end
             end
         end
@@ -2190,7 +2211,7 @@ classdef (Sealed) terminal < handle
                 terminal.MCP_SERVER_REPO, tag);
             bin = terminal.MCP_SERVER_BINARY;
             platforms = {'glnxa64', 'maca64', 'maci64', 'win64'};
-            suffixes  = {'-glnxa64', '-maca64', '-maci64', '-win64.exe'};
+            suffixes  = {'-linux-x64', '-macos-arm64', '-macos-x64', '-windows-x64.exe'};
             assets = struct('name', {}, 'browser_download_url', {});
             for i = 1:numel(platforms)
                 assets(i).name = [bin suffixes{i}];

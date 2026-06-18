@@ -3,7 +3,7 @@
 
 This guide explains how to connect Terminal to an AI coding agent. The setup installs:
 
-- The [MATLAB MCP Core Server](https://github.com/matlab/matlab-mcp-core-server)
+- The [MATLAB MCP Server](https://github.com/matlab/matlab-mcp-server)
 - Skills from [MATLAB Agentic Toolkit](https://github.com/matlab/matlab-agentic-toolkit) and [Simulink Agentic Toolkit](https://github.com/matlab/simulink-agentic-toolkit)
 
 and registers Terminal with your chosen agent.
