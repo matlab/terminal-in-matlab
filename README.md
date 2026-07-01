@@ -22,7 +22,11 @@ Run a terminal in MATLAB®. Use the terminal to run command-line interface tools
 - You require MATLAB R2024b or later.
 - Download [MATLAB Terminal (GitHub)](../../releases/latest/download/Terminal.mltbx) and install the toolbox in MATLAB:
   ```matlab
-  matlab.addons.install('Terminal.mltbx')
+  url = 'https://github.com/matlab/terminal-in-matlab/releases/latest/download/Terminal.mltbx';
+  tbx = 'Terminal.mltbx';
+
+  websave(tbx, url);
+  installed = mpminstall(tbx)
   ```
 - Open a terminal in MATLAB:
   ```matlab
@@ -108,7 +112,7 @@ To remove Terminal and all artifacts it created:
 
 ```matlab
 % 1. Uninstall the toolbox
-matlab.addons.uninstall('Terminal')
+mpmuninstall('Terminal')
 
 % 2. Remove saved preferences
 if ispref('terminal'), rmpref('terminal'); end

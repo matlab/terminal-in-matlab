@@ -1530,10 +1530,10 @@ classdef (Sealed) terminal < handle
             % Step 5: Install the new version.
             disp('Step 5/5: Installing new version...');
             try
-                matlab.addons.install(tmpFile);
+                mpminstall(tmpFile);
             catch me
                 fprintf(2, 'Installation failed. The .mltbx is saved at:\n  %s\n', tmpFile);
-                fprintf(2, 'You can install it manually: matlab.addons.install("%s")\n', tmpFile);
+                fprintf(2, 'You can install it manually: mpminstall("%s")\n', tmpFile);
                 error('Terminal:UpdateFailed', ...
                     'Installation failed:\n  %s', me.message);
             end
