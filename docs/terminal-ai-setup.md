@@ -1,6 +1,9 @@
 
 # Set Up AI Agents
 
+> [!WARNING]
+> The APIs described on this page are deprecated and will be removed in a future release. They will be replaced by a dedicated agentic installer for MathWorks products.
+
 This guide explains how to connect Terminal to an AI coding agent. The setup installs:
 
 - The [MATLAB MCP Server](https://github.com/matlab/matlab-mcp-server)

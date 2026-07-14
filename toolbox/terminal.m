@@ -211,14 +211,16 @@ classdef (Sealed) terminal < handle
             end
 
             % --- Agentic: full agent integration with toolkits ---
-            if options.Agent ~= "" || ~isempty(options.Toolkits)
+            if options.Agent ~= "" || ~isempty(options.Toolkits) || options.AgentCLI ~= ""
                 options.Agentic = true;
             end
             if options.Agentic
+                terminal.warnAgenticDeprecated();
                 if isMATLABReleaseOlderThan("R2023a")
                     error('Terminal:UnsupportedRelease', ...
                         'Agentic mode requires MATLAB R2023a or newer.');
                 end
+
                 config = terminal.readAgenticConfig();
 
                 isFirstRun = ~isfield(config, 'mcpServerVersion') ...
@@ -298,9 +300,9 @@ classdef (Sealed) terminal < handle
                     extensionFiles = terminal.collectExtensionFiles(requestedToolkits, toolkitPaths);
                     terminal.mergeMarketplace(toolkitPaths);
 
-                    if options.AgentCLI ~= "" && ~ismember(requestedAgent, ["claude", "codex"])
+                    if options.AgentCLI ~= "" && requestedAgent ~= "claude"
                         warning('Terminal:AgentCLIIgnored', ...
-                            'AgentCLI is only supported for Agent="claude" and Agent="codex". It will be ignored.');
+                            'AgentCLI is only supported for Agent="claude". It will be ignored.');
                         options.AgentCLI = "";
                     end
                     agentCLI = terminal.resolveAgentCLI( ...
@@ -1225,6 +1227,7 @@ classdef (Sealed) terminal < handle
             %   terminal.agentOptions()
             %
             %   Shows the configured agent and toolkits.
+            terminal.warnAgenticDeprecated();
             config = terminal.readAgenticConfig();
             if ~isfield(config, 'agent')
                 fprintf('No agent options configured. Run terminal(Agentic=true) to set up.\n');
@@ -1250,6 +1253,7 @@ classdef (Sealed) terminal < handle
             %
             %   Next call to terminal(Agentic=true) will re-run the setup wizard.
             %   Installed toolkits and MCP server are preserved.
+            terminal.warnAgenticDeprecated();
             config = terminal.readAgenticConfig();
             fieldsToRemove = intersect(fieldnames(config), {'agent', 'agentCLI'});
             if ~isempty(fieldsToRemove)
@@ -1268,6 +1272,7 @@ classdef (Sealed) terminal < handle
             arguments
                 toolkit string = ""
             end
+            terminal.warnAgenticDeprecated();
             if toolkit == ""
                 % Update all installed toolkits.
                 baseDir = terminal.agenticInstallRoot();
@@ -1286,6 +1291,7 @@ classdef (Sealed) terminal < handle
             %UPDATEMCPSERVER Update the MCP server binary to the latest release.
             %
             %   terminal.updateMCPServer()
+            terminal.warnAgenticDeprecated();
 
             serverBin = terminal.mcpBinaryPath();
             binDir = fileparts(serverBin);
@@ -1314,7 +1320,9 @@ classdef (Sealed) terminal < handle
                 release = webread(url, opts);
             catch me
                 error('Terminal:MCPUpdateFailed', ...
-                    'Unable to check for updates:\n  %s\n  Try again later.', me.message);
+                    ['Unable to check for updates.\n' ...
+                     '  Check your network connection and proxy settings.\n' ...
+                     '  Error: %s'], me.message);
             end
             latestVer = strrep(release.tag_name, 'v', '');
 
@@ -1329,19 +1337,7 @@ classdef (Sealed) terminal < handle
                 fprintf('Downloading MCP server %s...\n', release.tag_name);
             end
 
-            % Determine platform asset name.
-            arch = computer('arch');
-            switch arch
-                case 'glnxa64', assetSuffix = '-linux-x64';
-                case 'maca64',  assetSuffix = '-macos-arm64';
-                case 'maci64',  assetSuffix = '-macos-x64';
-                case 'win64',   assetSuffix = '-windows-x64.exe';
-                otherwise
-                    error('Terminal:UnsupportedPlatform', ...
-                        'Unsupported platform: %s', arch);
-            end
-
-            assetName = [terminal.MCP_SERVER_BINARY assetSuffix];
+            assetName = terminal.mcpAssetName();
             binaryURL = terminal.findMCPAsset(release, assetName);
             if isempty(binaryURL)
                 error('Terminal:MCPDownloadFailed', ...
@@ -1374,7 +1370,7 @@ classdef (Sealed) terminal < handle
                 mkdir(binDir);
             end
             fprintf('  Downloading %s %s for %s...\n', ...
-                terminal.MCP_SERVER_BINARY, release.tag_name, arch);
+                terminal.MCP_SERVER_BINARY, release.tag_name, computer('arch'));
             try
                 websave(serverBin, binaryURL);
             catch me
@@ -1812,6 +1808,14 @@ classdef (Sealed) terminal < handle
     end
 
     methods (Static, Access = private)
+        function warnAgenticDeprecated()
+            warning('Terminal:AgenticDeprecated', ...
+                ['This API is deprecated and will be removed in a future release. ' ...
+                 'It will be replaced by a dedicated agentic installer for MathWorks products.\n' ...
+                 'See <a href="https://github.com/matlab/terminal-in-matlab#set-up-ai-agents">' ...
+                 'README — Set Up AI Agents</a> for details.']);
+        end
+
         function setAgentOptions(opts)
             %SETAGENTOPTIONS Save agent preferences to config.json.
             terminal.validateAgentOptions(opts);
@@ -1890,63 +1894,68 @@ classdef (Sealed) terminal < handle
 
         function binPath = mcpBinaryPath()
             %MCPBINARYPATH Return the path for the MCP server binary.
-            %   ~/.matlab/agentic-toolkits/bin/matlab-mcp-server[.exe]
+            %   ~/.matlab/agentic-toolkits/bin/matlab-mcp-server-<platform>[.exe]
             binDir = fullfile(terminal.agenticInstallRoot(), 'bin');
-            if ispc
-                binPath = fullfile(binDir, 'matlab-mcp-server.exe');
-            else
-                binPath = fullfile(binDir, 'matlab-mcp-server');
-            end
+            binPath = fullfile(binDir, terminal.mcpAssetName());
         end
 
-        function runSetupMatlabIfNeeded(serverBin)
-            %RUNSETUPMATLABIFNEEDED Install MATLAB-side MCP components via --setup-matlab.
-            %   Replaces the old .mltbx download/install approach.
-            %   Skips if shareMATLABSession is already available.
+        function name = mcpAssetName()
+            %MCPASSETNAME Return the platform-specific MCP server asset name.
+            arch = computer('arch');
+            switch arch
+                case 'glnxa64', suffix = '-linux-x64';
+                case 'maca64',  suffix = '-macos-arm64';
+                case 'maci64',  suffix = '-macos-x64';
+                case 'win64',   suffix = '-windows-x64.exe';
+                otherwise
+                    error('Terminal:UnsupportedPlatform', ...
+                        'Unsupported platform: %s', arch);
+            end
+            name = [terminal.MCP_SERVER_BINARY suffix];
+        end
+
+        function runSetupMatlabIfNeeded(~)
+            %RUNSETUPMATLABIFNEEDED Install the MATLAB MCP Server Toolbox.
+            %   Downloads and installs MATLABMCPServerToolbox.mltbx from the
+            %   MCP server GitHub release. Skips if shareMATLABSession is
+            %   already available.
 
             if ~isempty(which('shareMATLABSession'))
                 return;
             end
 
-            if ~isfile(serverBin)
-                warning('Terminal:BinaryNotFound', ...
-                    'MCP server binary not found at %s. Cannot run --setup-matlab.', serverBin);
-                return;
+            mltbxName = 'MATLABMCPServerToolbox.mltbx';
+            release = terminal.fetchMCPRelease();
+            mltbxURL = terminal.findMCPAsset(release, mltbxName);
+            if isempty(mltbxURL)
+                % Fallback: direct URL using the release tag.
+                mltbxURL = sprintf('https://github.com/%s/releases/download/%s/%s', ...
+                    terminal.MCP_SERVER_REPO, release.tag_name, mltbxName);
             end
 
-            if ispc
-                stdinNull = '<nul';
-            else
-                stdinNull = '</dev/null';
-            end
-            cmd = sprintf('"%s" --setup-matlab --matlab-root="%s" %s 2>&1', ...
-                serverBin, matlabroot, stdinNull);
-            fprintf('Installing MATLAB MCP Server Toolbox...\n This may take a minute — please wait.\n');
-            [status, output] = system(cmd);
-            if status ~= 0
-                warning('Terminal:SetupMatlabWarning', ...
-                    'MCP server binary exited with code %d:\n  %s', ...
-                    status, strtrim(output));
+            fprintf('Installing MATLAB MCP Server Toolbox...\n');
+            mltbxPath = fullfile(tempdir, mltbxName);
+            try
+                websave(mltbxPath, mltbxURL);
+            catch me
+                error('Terminal:MCPToolboxDownloadFailed', ...
+                    'Failed to download %s:\n  %s', mltbxName, me.message);
             end
 
-            % Add the newly installed toolbox to the path so we don't
-            % need a MATLAB restart. The binary may report a non-zero exit
-            % code yet still install the toolbox successfully, so always
-            % check the expected location.
-            toolboxesDir = fileparts(fileparts(which('terminal')));
-            listing = dir(toolboxesDir);
-            names = {listing.name};
-            matches = ~cellfun(@isempty, regexp(names, '^MATLAB[_ ]MCP[_ ]Server[_ ]Toolbox'));
-            if any(matches)
-                matched = names(matches);
-                mcpToolboxDir = fullfile(toolboxesDir, matched{1});
-                addpath(mcpToolboxDir);
-                fprintf('MATLAB MCP Server Toolbox installed.\n');
-            else
-                error('Terminal:SetupMatlabFailed', ...
-                    'Unable to install the MATLAB MCP Server Toolbox.\n  The MCP server binary at:\n    %s\n  exited with code %d:\n    %s', ...
-                    serverBin, status, strtrim(output));
+            try
+                matlab.addons.install(mltbxPath);
+            catch me
+                error('Terminal:MCPToolboxInstallFailed', ...
+                    'Failed to install %s:\n  %s', mltbxName, me.message);
             end
+            delete(mltbxPath);
+
+            if isempty(which('shareMATLABSession'))
+                error('Terminal:MCPToolboxInstallFailed', ...
+                    ['Installed %s but shareMATLABSession is still not on the path.\n' ...
+                     '  Try restarting MATLAB.'], mltbxName);
+            end
+            fprintf('MATLAB MCP Server Toolbox installed.\n');
         end
 
         function connectionDetailsJSON = getSessionConnectionDetails()
@@ -1999,6 +2008,7 @@ classdef (Sealed) terminal < handle
             end
 
             % Clean up old-named binary from pre-v0.11.0 installations.
+            hadLegacyBinary = false;
             if ispc
                 legacyBin = fullfile(binDir, 'matlab-mcp-core-server.exe');
             else
@@ -2006,6 +2016,7 @@ classdef (Sealed) terminal < handle
             end
             if isfile(legacyBin)
                 delete(legacyBin);
+                hadLegacyBinary = true;
             end
 
             % Check managed location.
@@ -2017,10 +2028,7 @@ classdef (Sealed) terminal < handle
             end
 
             % Check system PATH.
-            binaryName = terminal.MCP_SERVER_BINARY;
-            if ispc
-                binaryName = [binaryName '.exe'];
-            end
+            binaryName = terminal.mcpAssetName();
             if ispc
                 [status, result] = system(sprintf('where %s 2>nul', binaryName));
             else
@@ -2037,29 +2045,36 @@ classdef (Sealed) terminal < handle
             end
 
             % Not found or too old — download.
-            fprintf('MCP server binary not found at:\n  %s\n', serverBin);
+            if hadLegacyBinary
+                fprintf(['\n<strong>MCP server needs to be replaced</strong>\n' ...
+                    '  The previously installed "matlab-mcp-core-server" has been renamed\n' ...
+                    '  to "matlab-mcp-server" and needs to be downloaded again.\n' ...
+                    '  Source: <a href="https://github.com/%s">github.com/%s</a>\n' ...
+                    '\n' ...
+                    '  After downloading, re-register your AI agent to update its configuration:\n' ...
+                    '    terminal.resetAgentOptions()\n' ...
+                    '    terminal(Agentic=true)\n\n'], ...
+                    terminal.MCP_SERVER_REPO, terminal.MCP_SERVER_REPO);
+            else
+                fprintf(['\n<strong>MCP server not found</strong>\n' ...
+                    '  The MATLAB MCP Server enables AI coding agents to interact with MATLAB.\n' ...
+                    '  Expected location: %s\n' ...
+                    '  Source: <a href="https://github.com/%s">github.com/%s</a>\n\n'], ...
+                    serverBin, terminal.MCP_SERVER_REPO, terminal.MCP_SERVER_REPO);
+            end
             reply = input('Download it now? (y/n) [y]: ', 's');
             if isempty(reply), reply = 'y'; end
             if ~strcmpi(reply, 'y')
                 error('Terminal:MCPBinaryRequired', ...
-                    'MCP server binary is required for Agentic mode.');
+                    ['The MCP server binary is required for Agentic mode.\n' ...
+                     '  To install later, run: terminal(Agentic=true)\n' ...
+                     '  Or download manually from: https://github.com/%s/releases'], ...
+                    terminal.MCP_SERVER_REPO);
             end
             fprintf('Downloading MCP server binary...\n');
 
-            % Determine platform asset name.
-            arch = computer('arch');
-            switch arch
-                case 'glnxa64', assetSuffix = '-linux-x64';
-                case 'maca64',  assetSuffix = '-macos-arm64';
-                case 'maci64',  assetSuffix = '-macos-x64';
-                case 'win64',   assetSuffix = '-windows-x64.exe';
-                otherwise
-                    error('Terminal:UnsupportedPlatform', ...
-                        'Unsupported platform: %s', arch);
-            end
-
             release = terminal.fetchMCPRelease();
-            assetName = [terminal.MCP_SERVER_BINARY assetSuffix];
+            assetName = terminal.mcpAssetName();
             binaryURL = terminal.findMCPAsset(release, assetName);
             if isempty(binaryURL)
                 error('Terminal:MCPDownloadFailed', ...
@@ -2099,7 +2114,7 @@ classdef (Sealed) terminal < handle
                 mkdir(binDir);
             end
             fprintf('  Downloading %s %s for %s...\n', ...
-                terminal.MCP_SERVER_BINARY, release.tag_name, arch);
+                terminal.MCP_SERVER_BINARY, release.tag_name, computer('arch'));
             try
                 websave(serverBin, binaryURL);
             catch me
@@ -2136,8 +2151,9 @@ classdef (Sealed) terminal < handle
                 if terminal.compareVersions(ver, terminal.MCP_MIN_SERVER_VERSION) >= 0
                     ok = true;
                 else
-                    fprintf('MCP server binary at "%s" is version %s (minimum: %s).\n', ...
-                        serverBin, ver, terminal.MCP_MIN_SERVER_VERSION);
+                    fprintf(['<strong>MCP server is outdated</strong> (installed: v%s, required: v%s+)\n' ...
+                        '  Location: %s\n'], ...
+                        ver, terminal.MCP_MIN_SERVER_VERSION, serverBin);
                 end
             catch
                 ok = true;  % Don't block on unexpected errors.
@@ -2162,8 +2178,14 @@ classdef (Sealed) terminal < handle
 
         function result = compareVersions(a, b)
             %COMPAREVERSIONS Compare two semver strings. Returns -1, 0, or 1.
+            %   Handles optional 'v' prefix and pre-release suffixes.
+            a = regexprep(char(a), '^v', '');
+            b = regexprep(char(b), '^v', '');
             partsA = sscanf(a, '%d.%d.%d')';
             partsB = sscanf(b, '%d.%d.%d')';
+            % Pad to 3 elements in case of short/malformed input.
+            partsA(end+1:3) = 0;
+            partsB(end+1:3) = 0;
             for i = 1:3
                 if partsA(i) < partsB(i), result = -1; return; end
                 if partsA(i) > partsB(i), result =  1; return; end
@@ -2199,7 +2221,10 @@ classdef (Sealed) terminal < handle
                     cachedRelease = release;
                 else
                     error('Terminal:MCPDownloadFailed', ...
-                        'Could not reach GitHub for MCP Server:\n  %s', me.message);
+                        ['Could not reach GitHub to download the MCP server.\n' ...
+                         '  Check your network connection and proxy settings.\n' ...
+                         '  URL: https://github.com/%s/releases\n' ...
+                         '  Error: %s'], terminal.MCP_SERVER_REPO, me.message);
                 end
             end
         end
@@ -2217,6 +2242,9 @@ classdef (Sealed) terminal < handle
                 assets(i).name = [bin suffixes{i}];
                 assets(i).browser_download_url = [baseURL bin suffixes{i}];
             end
+            mltbxName = 'MATLABMCPServerToolbox.mltbx';
+            assets(end+1).name = mltbxName;
+            assets(end).browser_download_url = [baseURL mltbxName];
             release.tag_name = tag;
             release.assets = assets;
         end
@@ -2246,7 +2274,6 @@ classdef (Sealed) terminal < handle
             else
                 switch string(agent)
                     case "claude", cli = "claude";
-                    case "codex",  cli = "codex";
                     otherwise,     cli = "";
                 end
             end
@@ -3023,83 +3050,129 @@ classdef (Sealed) terminal < handle
             fprintf('Claude Code: wrote MCP config to %s\n', configFile);
         end
 
-        function registerCodex(serverBin, serverArgs, agentCLI)
+        function registerCodex(serverBin, serverArgs, ~)
             %REGISTERCODEX Register MCP server with Codex CLI.
-            %   Uses `codex mcp add` if CLI is on PATH, otherwise falls back
-            %   to writing ~/.codex/config.json directly.
+            %   Writes ~/.codex/config.toml directly. The `codex mcp` CLI
+            %   surface is experimental; config.toml is the stable,
+            %   documented configuration surface for MCP servers.
 
             serverBin = strrep(char(serverBin), '\', '/');
-            nullDev = terminal.nullRedirect();
-            stdinNull = terminal.stdinRedirect();
 
-            if nargin < 3, agentCLI = ""; end
-
-            % Resolve the codex CLI command.
-            if agentCLI ~= ""
-                codexCmd = char(agentCLI);
-            else
-                codexCmd = 'codex';
+            % Environment variables to pass through to the MCP server.
+            % Declared by name so Codex forwards them at runtime (values
+            % change each MATLAB session).
+            envVars = "MW_MCP_SERVER_MATLAB_SESSION_CONNECTION_DETAILS";
+            if ispc
+                envVars = ["WINDIR", envVars];
             end
 
-            % Check if codex CLI is available.
-            if agentCLI ~= ""
-                [cliStatus, ~] = system(sprintf('%s --version %s', codexCmd, nullDev));
-            elseif ispc
-                [cliStatus, ~] = system(sprintf('where %s %s', codexCmd, nullDev));
-            else
-                [cliStatus, ~] = system(sprintf('which %s %s', codexCmd, nullDev));
-            end
-
-            if cliStatus == 0
-                % Remove stale entry first.
-                system(sprintf('%s mcp remove matlab %s', codexCmd, nullDev));
-
-                % Register via CLI.
-                quotedArgs = cellfun(@(a) sprintf('"%s"', a), serverArgs, ...
-                    'UniformOutput', false);
-                argsStr = strjoin(quotedArgs, ' ');
-                cmd = sprintf('%s mcp add matlab -- "%s" %s %s', ...
-                    codexCmd, serverBin, argsStr, stdinNull);
-                [status, output] = system(cmd);
-                if status ~= 0
-                    warning('Terminal:CodexConfigFailed', ...
-                        'Failed to configure Codex CLI:\n  %s\nFalling back to direct file write.', ...
-                        strtrim(output));
-                    terminal.writeCodexJson(serverBin, serverArgs);
-                else
-                    fprintf('Codex CLI: MCP server registered (via %s mcp add)\n', codexCmd);
-                end
-            else
-                % CLI not available — write config directly.
-                terminal.writeCodexJson(serverBin, serverArgs);
-            end
+            terminal.writeCodexToml(serverBin, serverArgs, envVars);
         end
 
-        function writeCodexJson(serverBin, serverArgs)
-            %WRITECODEXJSON Write MCP server config to ~/.codex/config.json.
+        function writeCodexToml(serverBin, serverArgs, envVars)
+            %WRITECODEXTOML Write MCP server config to ~/.codex/config.toml.
             home = terminal.userHome();
             configDir = fullfile(home, '.codex');
-            configFile = fullfile(configDir, 'config.json');
+            configFile = fullfile(configDir, 'config.toml');
             if ~isfolder(configDir)
                 mkdir(configDir);
             end
+
+            % Read existing content to preserve other settings.
             if isfile(configFile)
-                config = jsondecode(fileread(configFile));
+                existing = fileread(configFile);
             else
-                config = struct();
+                existing = '';
             end
-            if ~isfield(config, 'mcpServers')
-                config.mcpServers = struct();
+
+            % Extract existing args and env_vars from [mcp_servers.matlab]
+            % before removing the section, so we can merge rather than
+            % overwrite user-added values.
+            existingEnvVars = {};
+            existingArgs = {};
+            sectionMatch = regexp(existing, ...
+                '\[mcp_servers\.matlab\][^\n]*\n(([^\[\n][^\n]*\n|[ \t]*\n)*)', 'tokens', 'once');
+            if ~isempty(sectionMatch)
+                envLine = regexp(sectionMatch{1}, 'env_vars\s*=\s*\[([^\]]*)\]', 'tokens', 'once');
+                if ~isempty(envLine)
+                    existingEnvVars = regexp(envLine{1}, '"([^"]*)"', 'tokens');
+                    existingEnvVars = cellfun(@(c) c{1}, existingEnvVars, 'UniformOutput', false);
+                end
+                argsLine = regexp(sectionMatch{1}, 'args\s*=\s*\[([^\]]*)\]', 'tokens', 'once');
+                if ~isempty(argsLine)
+                    existingArgs = regexp(argsLine{1}, '''([^'']*)''|"([^"]*)"', 'tokens');
+                    existingArgs = cellfun(@(c) c{find(~cellfun('isempty',c),1)}, ...
+                        existingArgs, 'UniformOutput', false);
+                end
             end
-            args = serverArgs;
-            config.mcpServers.matlab = struct('command', serverBin, 'args', {args});
+
+            % Remove any existing [mcp_servers.matlab] section.
+            % Matches the header line and all subsequent lines that do NOT
+            % start with '[' (i.e., are not a new TOML section header).
+            existing = regexprep(existing, '\[mcp_servers\.matlab\][^\n]*\n([^\[\n][^\n]*\n|[ \t]*\n)*', '');
+            existing = strtrim(existing);
+
+            % Build the new section, merging existing args with ours.
+            ourArgs = cellfun(@(a) strrep(a, '\', '/'), serverArgs, ...
+                'UniformOutput', false);
+            allArgs = unique([existingArgs, ourArgs], 'stable');
+            argsStr = strjoin(cellfun(@(a) sprintf('"%s"', a), ...
+                allArgs, 'UniformOutput', false), ', ');
+            newSection = sprintf('[mcp_servers.matlab]\n  command = "%s"\n  args = [%s]\n', ...
+                serverBin, argsStr);
+
+            % Merge existing env_vars with our required ones (deduplicated).
+            if nargin >= 3 && ~isempty(envVars)
+                allEnvVars = unique([existingEnvVars, cellstr(envVars)], 'stable');
+            else
+                allEnvVars = existingEnvVars;
+            end
+            if ~isempty(allEnvVars)
+                envItems = cellfun(@(v) sprintf('"%s"', v), ...
+                    allEnvVars, 'UniformOutput', false);
+                newSection = sprintf('%s  env_vars = [%s]\n', ...
+                    newSection, strjoin(envItems, ', '));
+            end
+
+            % Combine existing content with new section.
+            if ~isempty(existing)
+                content = sprintf('%s\n\n%s', existing, newSection);
+            else
+                content = newSection;
+            end
+
+            % Show existing and new content, ask for confirmation.
+            fprintf('\n');
+            fprintf('Codex configuration file: %s\n', configFile);
+            if isfile(configFile)
+                fprintf('\nExisting MATLAB MCP Server configurations:\n');
+                if ~isempty(sectionMatch)
+                    fprintf('  %s\n', strtrim(sectionMatch{1}));
+                else
+                    fprintf('  (none)\n');
+                end
+            else
+                fprintf('\nFile does not exist yet.\n');
+            end
+            fprintf('\nNew MATLAB MCP Server configuration:\n');
+            fprintf('  %s', strrep(newSection, sprintf('\n'), sprintf('\n  ')));
+            fprintf('\n');
+
+            reply = input('Write this config? (y/n) [y]: ', 's');
+            if isempty(reply), reply = 'y'; end
+            if ~strcmpi(reply, 'y')
+                fprintf('Your Codex configuration file was not modified.\n');
+                fprintf('You can manually add the section above to:\n  %s\n', configFile);
+                return;
+            end
+
             fid = fopen(configFile, 'w');
             if fid == -1
                 error('Terminal:ConfigWriteFailed', 'Cannot write config: %s', configFile);
             end
             cleanupObj = onCleanup(@() fclose(fid));
-            fwrite(fid, jsonencode(config, 'PrettyPrint', true));
-            fprintf('Codex CLI: wrote MCP config to %s\n', configFile);
+            fwrite(fid, content);
+            fprintf('Updated Codex configuration file at : %s\n', configFile);
         end
 
         function installGlobalSkills(toolkitPaths)
@@ -3237,7 +3310,8 @@ classdef (Sealed) terminal < handle
                     end
 
                 case "codex"
-                    fprintf('  codex mcp remove matlab\n');
+                    fprintf('  Remove [mcp_servers.matlab] from:\n');
+                    fprintf('    %s\n', fullfile(home, '.codex', 'config.toml'));
                     terminal.printSkillsUndoHint(home);
 
                 case "copilot"

@@ -10,10 +10,10 @@ Run a terminal in MATLAB®. Use the terminal to run command-line interface tools
 ## Table of Contents
 
 - [Get Started](#get-started)
-- [Set Up AI Agents](#set-up-ai-agents)
 - [Use Terminal in Simulink](#use-terminal-in-simulink)
 - [Additional Terminal Commands](#additional-terminal-commands)
 - [Uninstall](#uninstall)
+- [Set Up AI Agents](#set-up-ai-agents) *(deprecated)*
 - [Licensing](#licensing)
 - [Contact Support](#contact-support)
 
@@ -29,34 +29,6 @@ Run a terminal in MATLAB®. Use the terminal to run command-line interface tools
   % Open a docked terminal
   t = terminal();
   ```
-
-### Set Up AI Agents
-
-To use AI agents in the MATLAB terminal, you can use a wizard which sets up for you:
-
-- an AI agent such as Claude Code, GitHub Copilot, OpenAI Codex, Gemini, or Amp.
-- the [MATLAB MCP Server](https://github.com/matlab/matlab-mcp-server)
-- skills to help your AI agent use MATLAB and Simulink, from [MATLAB Agentic Toolkit (GitHub)](https://github.com/matlab/matlab-agentic-toolkit) and [Simulink Agentic Toolkit (GitHub)](https://github.com/matlab/simulink-agentic-toolkit)
-
-Run the wizard:
-
-```matlab
-% Interactive wizard (first run)
-t = terminal(Agentic=true);
-```
-
-You can also programmatically specify your agent and toolkits.
-
-```
-t = terminal(Agent="claude");
-t = terminal(Agent="copilot");
-t = terminal(Agent="codex");
-t = terminal(Agent="gemini", Toolkits=["matlab","simulink"]);
-```
-
-To change your options later on, run `terminal.resetAgentOptions` and re-run interactive wizard.
-
-For more information about using the AI setup process, see [Using the Terminal AI Setup (GitHub)](/docs/terminal-ai-setup.md).
 
 ## Use Terminal in Simulink
 
@@ -117,6 +89,51 @@ if ispref('terminal'), rmpref('terminal'); end
 if ispc, home = getenv('USERPROFILE'); else, home = getenv('HOME'); end
 rmdir(fullfile(home, '.matlab', 'agentic-toolkits'), 's')
 ```
+
+### Set Up AI Agents
+
+> [!WARNING]
+> The following APIs are deprecated and will be removed in a future release. They will be replaced by a dedicated agentic installer for MathWorks products.
+
+
+To use AI agents in the MATLAB terminal, you can use a wizard which sets up for you:
+
+- an AI agent such as Claude Code, GitHub Copilot, OpenAI Codex, Gemini, or Amp.
+- the [MATLAB MCP Server](https://github.com/matlab/matlab-mcp-server)
+- skills to help your AI agent use MATLAB and Simulink, from [MATLAB Agentic Toolkit (GitHub)](https://github.com/matlab/matlab-agentic-toolkit) and [Simulink Agentic Toolkit (GitHub)](https://github.com/matlab/simulink-agentic-toolkit)
+
+Run the wizard:
+
+```matlab
+% Interactive wizard (first run)
+t = terminal(Agentic=true);
+```
+
+You can also programmatically specify your agent and toolkits.
+
+```
+t = terminal(Agent="claude");
+t = terminal(Agent="copilot");
+t = terminal(Agent="codex");
+t = terminal(Agent="gemini", Toolkits=["matlab","simulink"]);
+```
+
+To change your options later on, run `terminal.resetAgentOptions` and re-run interactive wizard.
+
+For more information about using the AI setup process, see [Using the Terminal AI Setup (GitHub)](/docs/terminal-ai-setup.md).
+
+### Upgrading from v0.2.0 to v0.3.0
+
+> [!IMPORTANT]
+> The `matlab-mcp-core-server` binary has been replaced by `matlab-mcp-server` from [matlab/matlab-mcp-server](https://github.com/matlab/matlab-mcp-server). If you used `terminal(Agentic=true)` with v0.2.0, re-register your AI agent so its configuration points to the new binary:
+>
+> ```matlab
+> terminal.resetAgentOptions()
+> terminal(Agentic=true)
+> ```
+>
+> This downloads the new MCP server binary and rewrites your agent's configuration files (e.g., `.claude.json`, Copilot settings, Codex config) with the updated path.
+
 
 ## Licensing
 
