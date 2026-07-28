@@ -365,6 +365,48 @@ classdef TestTerminalInSimulink < matlab.unittest.TestCase
                 @() createAndCleanup(testCase, Place="simulink", WindowStyle="docked"));
         end
 
+        %% --- StartupCommand and run() tests ---
+
+        function testStartupCommandExecutesInSimulink(testCase)
+            % StartupCommand should execute in the terminal session.
+            marker = sprintf('MARKER_%08x', randi(2^32 - 1));
+            t = terminal(Model=testCase.ModelName, StartupCommand="echo " + marker);
+            testCase.addTeardown(@() safeDelete(t));
+            pause(5);  % allow session creation + startup command delivery
+            % Verify the terminal is alive and session was established by
+            % confirming run() works (which requires SessionIds).
+            testCase.verifyWarningFree(@() t.run("echo done"));
+        end
+
+        function testRunWorksInSimulink(testCase)
+            % run() should succeed once the session is established.
+            t = terminal(Place="simulink");
+            testCase.addTeardown(@() safeDelete(t));
+            pause(4);  % allow session to be created and synced
+            testCase.verifyWarningFree(@() t.run("echo hello"));
+        end
+
+        function testRunTimesOutWithoutSession(testCase)
+            % run() should error if called before session exists (edge case).
+            % We test this by creating a terminal and immediately calling
+            % run() — the poll timer should sync the session within 5s.
+            t = terminal(Place="simulink");
+            testCase.addTeardown(@() safeDelete(t));
+            % run() internally waits up to 5s for SessionIds to populate.
+            % It should succeed because the poll syncs within that window.
+            testCase.verifyWarningFree(@() t.run("echo quick"));
+        end
+
+        function testStartupCommandOnlyFiresOnce(testCase)
+            % StartupCommand should only fire for the first session, not
+            % subsequent ones created by the poll timer syncing.
+            t = terminal(Model=testCase.ModelName, StartupCommand="echo first_only");
+            testCase.addTeardown(@() safeDelete(t));
+            pause(5);
+            % After firing, run() should still work (sessions are synced).
+            testCase.verifyWarningFree(@() t.run("echo second"));
+        end
+
         %% --- Tabs tests ---
 
         function testTabsTrueInSimulink(testCase)

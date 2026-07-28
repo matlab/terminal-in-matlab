@@ -564,7 +564,11 @@ classdef (Sealed) terminal < handle
                 timeout = 5;
                 elapsed = 0;
                 while isempty(obj.SessionIds) && elapsed < timeout
-                    drainqueue(obj);
+                    if obj.Place == "simulink"
+                        obj.checkAllExited();
+                    else
+                        drainqueue(obj);
+                    end
                     pause(0.1);
                     elapsed = elapsed + 0.1;
                 end
@@ -784,6 +788,8 @@ classdef (Sealed) terminal < handle
             % so we need a lightweight timer to detect when all sessions end.
             obj.ReadOpts = weboptions('HeaderFields', {'Authorization', obj.AuthToken}, ...
                 'Timeout', 2, 'ContentType', 'json');
+            obj.WriteOpts = weboptions('HeaderFields', {'Authorization', obj.AuthToken}, ...
+                'MediaType', 'application/json', 'Timeout', 2);
             obj.PollTimer = timer( ...
                 'ExecutionMode', 'fixedSpacing', ...
                 'StartDelay', 2, ...
@@ -1156,11 +1162,25 @@ classdef (Sealed) terminal < handle
 
         function checkAllExited(obj)
             %CHECKALLEXITED Close window if server has no active sessions.
+            %   In Simulink mode, also syncs SessionIds from the server and
+            %   fires StartupCommand once the first session appears.
             try
                 url = [obj.BaseURL, '/api/sessions'];
                 resp = webread(url, obj.ReadOpts);
                 if resp.count > 0
-                    return;  % Other sessions still active.
+                    % Sync session IDs from server (Simulink mode only).
+                    if obj.Place == "simulink"
+                        newIds = cellstr(string(resp.ids));
+                        if isempty(obj.SessionIds) && ~isempty(newIds)
+                            obj.SessionIds = newIds;
+                            obj.fireStartupCommandIfNeeded(newIds{end});
+                        else
+                            obj.SessionIds = newIds;
+                        end
+                    end
+                    return;
+                elseif isempty(obj.SessionIds)
+                    return;  % No sessions created yet — don't close prematurely.
                 end
             catch
                 % Server gone — close anyway.
@@ -1169,6 +1189,17 @@ classdef (Sealed) terminal < handle
             closeTimer = timer('StartDelay', 0.5, ...
                 'TimerFcn', @(t,~) terminal.deferredClose(t, obj, fig));
             start(closeTimer);
+        end
+
+        function fireStartupCommandIfNeeded(obj, sessionId)
+            %FIRESTARTUPCOMMANDIFNEEDED Send StartupCommand to a session.
+            if obj.StartupCommand ~= ""
+                cmd = obj.StartupCommand + obj.ENTER_KEY;
+                obj.StartupCommand = "";
+                obj.StartupInputTimer = timer('StartDelay', 1.0, ...
+                    'TimerFcn', @(t,~) obj.sendStartupInput(t, sessionId, cmd));
+                start(obj.StartupInputTimer);
+            end
         end
 
         function resp = serverPost(obj, endpoint, data)
