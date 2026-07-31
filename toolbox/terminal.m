@@ -665,11 +665,11 @@ classdef (Sealed) terminal < handle
             end
 
             obj.HTMLComponent = uihtml(parent);
-            obj.HTMLComponent.Position = [0 0 parent.Position(3) parent.Position(4)];
+            obj.HTMLComponent.Position = [0 0 obj.getParentPixelSize(parent)];
             obj.HTMLComponent.HTMLSource = htmlFile;
 
             % Auto-resize.
-            obj.ParentFigure.SizeChangedFcn = @(~,~) obj.onFigureResized();
+            parent.SizeChangedFcn = @(~,~) obj.onFigureResized();
 
             % Clean up when figure is closed.
             if isprop(obj.ParentFigure, 'CloseRequestFcn')
@@ -836,6 +836,14 @@ classdef (Sealed) terminal < handle
                 'TimerFcn', @(~,~) obj.pollOutput(), ...
                 'ErrorFcn', @(~,~) []);
             start(obj.PollTimer);
+
+            % Nudge the HTML component size to force xterm.js to reflow.
+            % When embedded in a panel/grid, the initial fit() can fire
+            % before the container is fully laid out.
+            nudgeTimer = timer('ExecutionMode', 'fixedSpacing', ...
+                'StartDelay', 3, 'Period', 2, 'TasksToExecute', 2, ...
+                'TimerFcn', @(tmr,~) obj.nudgeResize(tmr));
+            start(nudgeTimer);
         end
 
         function checkThemeChanged(obj)
@@ -857,7 +865,8 @@ classdef (Sealed) terminal < handle
 
         function onFigureResized(obj)
             %ONFIGURERESIZED Update uihtml size and sync dock toolbar visibility.
-            obj.HTMLComponent.Position = [0 0 obj.ParentFigure.Position(3) obj.ParentFigure.Position(4)];
+            parent = obj.HTMLComponent.Parent;
+            obj.HTMLComponent.Position = [0 0 obj.getParentPixelSize(parent)];
             % Toggle dock toolbar based on current WindowStyle.
             if ~isempty(obj.UIToolbar) && isvalid(obj.UIToolbar)
                 isDocked = obj.ParentFigure.WindowStyle == "docked";
@@ -1206,6 +1215,31 @@ classdef (Sealed) terminal < handle
             %SERVERPOST Send a POST request to the Go server.
             url = [obj.BaseURL, endpoint];
             resp = webwrite(url, data, obj.WriteOpts);
+        end
+
+        function sz = getParentPixelSize(~, parent)
+            %GETPARENTPIXELSIZE Return [width height] of parent in pixels.
+            prevUnits = parent.Units;
+            parent.Units = 'pixels';
+            pos = parent.InnerPosition;
+            parent.Units = prevUnits;
+            sz = [pos(3) pos(4)];
+        end
+
+        function nudgeResize(obj, tmr)
+            %NUDGERESIZE Adjust HTML size to force xterm.js reflow via ResizeObserver.
+            if tmr.TasksExecuted >= tmr.TasksToExecute
+                stop(tmr);
+                delete(tmr);
+            end
+            if ~isvalid(obj) || isempty(obj.HTMLComponent) || ~isvalid(obj.HTMLComponent)
+                return;
+            end
+            parent = obj.HTMLComponent.Parent;
+            sz = obj.getParentPixelSize(parent);
+            obj.HTMLComponent.Position = [0 0 sz(1)-1 sz(2)-1];
+            pause(0.2);
+            obj.HTMLComponent.Position = [0 0 sz(1) sz(2)];
         end
 
         function sendStartupInput(obj, tmr, sessionId, cmd)
