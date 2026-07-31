@@ -1166,6 +1166,12 @@ classdef (Sealed) terminal < handle
                     if ~isempty(text)
                         obj.serverPost('/api/input', struct('id', msg.id, 'data', text));
                     end
+                case 'fontWarning'
+                    prev = warning('off', 'backtrace');
+                    warning('Terminal:ProportionalFont', ...
+                        '"%s" is not a monospaced font. Terminal requires a fixed-width font.\nUsing Consolas instead.', ...
+                        msg.font);
+                    warning(prev);
             end
         end
 

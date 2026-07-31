@@ -87,6 +87,36 @@
             }
 
             // ---------------------
+            // Font monospace detection
+            // ---------------------
+            var MONOSPACE_DEFAULT = 'Consolas, \'DejaVu Sans Mono\', \'Liberation Mono\', monospace';
+            var fontWarningIssued = {};
+
+            function isMonospaced(fontFamily) {
+                var canvas = document.createElement('canvas');
+                var ctx = canvas.getContext('2d');
+                ctx.font = '16px ' + fontFamily;
+                var wW = ctx.measureText('W').width;
+                var wi = ctx.measureText('i').width;
+                var wM = ctx.measureText('M').width;
+                var wl = ctx.measureText('l').width;
+                return Math.abs(wW - wi) < 0.5 && Math.abs(wM - wl) < 0.5;
+            }
+
+            function validateFont(fontFamily) {
+                if (!fontFamily || fontFamily === MONOSPACE_DEFAULT) return fontFamily || MONOSPACE_DEFAULT;
+                if (isMonospaced(fontFamily)) return fontFamily;
+                var offending = fontFamily.split(',')[0].replace(/'/g, '').trim();
+                if (!fontWarningIssued[offending]) {
+                    fontWarningIssued[offending] = true;
+                    if (transport) {
+                        transport.send({ type: 'fontWarning', font: offending });
+                    }
+                }
+                return MONOSPACE_DEFAULT;
+            }
+
+            // ---------------------
             // Caps Lock fix for CEF
             // ---------------------
             // CEF may not reflect Caps Lock state in event.key, causing
@@ -296,12 +326,13 @@
                         config = { theme: newTheme };
                         applyTheme(newTheme);
                         var xtTheme = buildXtermTheme(newTheme);
+                        var validFont = validateFont(newTheme.fontFamily || MONOSPACE_DEFAULT);
                         var ids = Object.keys(tabs);
                         for (var t = 0; t < ids.length; t++) {
                             var entry = tabs[ids[t]];
                             if (entry.terminal) {
                                 entry.terminal.options.theme = xtTheme;
-                                entry.terminal.options.fontFamily = newTheme.fontFamily || 'Consolas, monospace';
+                                entry.terminal.options.fontFamily = validFont;
                                 entry.terminal.options.fontSize = newTheme.fontSize || 14;
                                 if (entry.fitAddon) entry.fitAddon.fit();
                             }
@@ -489,12 +520,13 @@
                         config = { theme: newTheme };
                         applyTheme(newTheme);
                         var xtTheme = buildXtermTheme(newTheme);
+                        var validFont = validateFont(newTheme.fontFamily || MONOSPACE_DEFAULT);
                         var ids = Object.keys(tabs);
                         for (var t = 0; t < ids.length; t++) {
                             var entry = tabs[ids[t]];
                             if (entry.terminal) {
                                 entry.terminal.options.theme = xtTheme;
-                                entry.terminal.options.fontFamily = newTheme.fontFamily || 'Consolas, monospace';
+                                entry.terminal.options.fontFamily = validFont;
                                 entry.terminal.options.fontSize = newTheme.fontSize || 14;
                                 if (entry.fitAddon) entry.fitAddon.fit();
                             }
@@ -780,7 +812,7 @@
                 }
                 if (theme.background) root.style.setProperty('--bg-color', theme.background);
                 if (theme.foreground) root.style.setProperty('--fg-color', theme.foreground);
-                if (theme.fontFamily) root.style.setProperty('--font-family', theme.fontFamily);
+                if (theme.fontFamily) root.style.setProperty('--font-family', validateFont(theme.fontFamily));
                 if (theme.fontSize) root.style.setProperty('--font-size', theme.fontSize + 'px');
 
                 if (theme.background) {
@@ -873,8 +905,9 @@
                 containerEl.appendChild(wrapper);
 
                 var theme = config && config.theme;
+                var validatedFont = validateFont((theme && theme.fontFamily) || MONOSPACE_DEFAULT);
                 var terminal = new Terminal({
-                    fontFamily: (theme && theme.fontFamily) || 'Consolas, monospace',
+                    fontFamily: validatedFont,
                     fontSize: (theme && theme.fontSize) || 14,
                     theme: buildXtermTheme(theme),
                     cursorBlink: true,
@@ -1011,8 +1044,9 @@
                 containerEl.appendChild(wrapper);
 
                 var theme = config && config.theme;
+                var validatedFont = validateFont((theme && theme.fontFamily) || MONOSPACE_DEFAULT);
                 var terminal = new Terminal({
-                    fontFamily: (theme && theme.fontFamily) || 'Consolas, monospace',
+                    fontFamily: validatedFont,
                     fontSize: (theme && theme.fontSize) || 14,
                     theme: buildXtermTheme(theme),
                     cursorBlink: true,
