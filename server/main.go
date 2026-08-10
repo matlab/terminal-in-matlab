@@ -55,8 +55,12 @@ func main() {
 			os.Setenv(k, v)
 		}
 	}
-	// Override TERM so PTY sessions get color support (harmless on Windows).
-	os.Setenv("TERM", "xterm-256color")
+	// On Unix, TERM is set per-PTY child (see pty_unix.go) so that xterm.js
+	// gets 256-color support without polluting the server environment.
+	// On Windows, ConPTY provides terminal emulation natively — setting TERM
+	// globally caused TUI apps (e.g. codex) to render opaque backgrounds
+	// that clash with MATLAB's light theme.
+	os.Unsetenv("TERM")
 
 	// Ensure UTF-8 locale for multi-byte character support (CJK, etc.).
 	// Without this, shells may not process non-ASCII input correctly.

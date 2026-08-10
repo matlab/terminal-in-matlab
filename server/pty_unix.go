@@ -19,6 +19,7 @@ type unixPTY struct {
 
 func startPTY(shell string, cols, rows uint16) (ptyProcess, error) {
 	cmd := exec.Command(shell)
+	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
 	ptmx, err := pty.StartWithSize(cmd, &pty.Winsize{
 		Cols: cols,
 		Rows: rows,
