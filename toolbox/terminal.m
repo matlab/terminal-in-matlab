@@ -1522,18 +1522,17 @@ classdef (Sealed) terminal < handle
 
             if version == ""
                 release = terminal.fetchLatestRelease();
+                targetVersion = terminal.tagToVersion(release.tag_name);
+                mltbxURL = terminal.findMltbxAsset(release);
             else
-                release = terminal.fetchRelease(version);
+                targetVersion = terminal.tagToVersion(version);
+                mltbxURL = terminal.directMltbxURL(targetVersion);
             end
 
-            targetVersion = terminal.tagToVersion(release.tag_name);
             installedVersion = string(terminal.version());
 
             fprintf('  Installed version: %s\n', installedVersion);
             fprintf('  Target version:    %s\n', targetVersion);
-
-            % Find the .mltbx asset in the release.
-            mltbxURL = terminal.findMltbxAsset(release);
 
             % Ask for confirmation.
             if targetVersion == installedVersion
@@ -3773,6 +3772,19 @@ classdef (Sealed) terminal < handle
                 opts = weboptions('ContentType', 'json', 'Timeout', 10);
                 release = webread(url, opts);
             catch me
+                releasesPage = sprintf( ...
+                    'https://github.com/%s/releases', terminal.GITHUB_REPO);
+                if contains(me.message, '403') || contains(me.message, 'rate')
+                    error('Terminal:RateLimited', ...
+                        ['GitHub API rate limit exceeded.\n\n' ...
+                         'Your network has made too many requests to the ' ...
+                         'GitHub API this hour.\n\n' ...
+                         'Use terminal.update("X.Y.Z") with a specific ' ...
+                         'version number to avoid this issue.\n\n' ...
+                         'To find the latest release version, visit:\n' ...
+                         '  <a href="%s">%s</a>'], ...
+                        releasesPage, releasesPage);
+                end
                 error('Terminal:UpdateFailed', ...
                     'Could not reach GitHub:\n  %s', me.message);
             end
@@ -3825,6 +3837,12 @@ classdef (Sealed) terminal < handle
                 error('Terminal:UpdateFailed', ...
                     'No .mltbx file found in release %s.', v);
             end
+        end
+
+        function url = directMltbxURL(version)
+            %DIRECTMLTBXURL Construct the .mltbx download URL without using the API.
+            url = sprintf('https://github.com/%s/releases/download/v%s/Terminal.mltbx', ...
+                terminal.GITHUB_REPO, version);
         end
 
         function token = generateToken()
