@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project MetadataType="monolithic">
+    <Info Location="ProjectData">
+        <Info Name="terminal-in-matlab"/>
+    </Info>
+    <Files Location="Root">
+        <File Location=".gitattributes">
+            <Info/>
+        </File>
+        <File Location=".gitignore">
+            <Info/>
+        </File>
+        <File Location=".github">
+            <Info/>
+            <DIR_SIGNIFIER Location="1">
+                <Info/>
+            </DIR_SIGNIFIER>
+            <File Location="ISSUE_TEMPLATE">
+                <Info/>
+                <DIR_SIGNIFIER Location="1">
+                    <Info/>
+                </DIR_SIGNIFIER>
+                <File Location="bug_report.yml">
+                    <Info/>
+                </File>
+                <File Location="enhancement.yml">
+                    <Info/>
+                </File>
+            </File>
+            <File Location="workflows">
+                <Info/>
+                <DIR_SIGNIFIER Location="1">
+                    <Info/>
+                </DIR_SIGNIFIER>
+                <File Location="ci.yml">
+                    <Info/>
+                </File>
+                <File Location="release.yml">
+                    <Info/>
+                </File>
+            </File>
+        </File>
+        <File Location="CONTRIBUTING.md">
+            <Info/>
+        </File>
+        <File Location="LICENSE.md">
+            <Info/>
+        </File>
+        <File Location="README.md">
+            <Info/>
+        </File>
+        <File Location="SECURITY.md">
+            <Info/>
+        </File>
+        <File Location="THIRD_PARTY_LICENSES.md">
+            <Info/>
+        </File>
+        <File Location="build">
+            <Info/>
+            <DIR_SIGNIFIER Location="1">
+                <Info/>
+            </DIR_SIGNIFIER>
+            <File Location="build_assets.m">
+                <Info>
+                    <Category UUID="FileClassCategory">
+                        <Label UUID="design"/>
+                    </Category>
+                </Info>
+            </File>
+            <File Location="package.m">
+                <Info>
+                    <Category UUID="FileClassCategory">
+                        <Label UUID="design"/>
+                    </Category>
+                </Info>
+            </File>
+            <File Location="setup_xterm.sh">
+                <Info/>
+            </File>
+        </File>
+        <File Location="docs">
+            <Info/>
+            <DIR_SIGNIFIER Location="1">
+                <Info/>
+            </DIR_SIGNIFIER>
+            <File Location="customize-terminal-theme.md">
+                <Info/>
+            </File>
+            <File Location="terminal-ai-setup.md">
+                <Info/>
+            </File>
+            <File Location="trust-and-permissions.md">
+                <Info/>
+            </File>
+        </File>
+        <File Location="images">
+            <Info/>
+            <DIR_SIGNIFIER Location="1">
+                <Info/>
+            </DIR_SIGNIFIER>
+            <File Location="simulink-terminal.png">
+                <Info/>
+            </File>
+            <File Location="terminal.png">
+                <Info/>
+            </File>
+            <File Location="theme-dark.png">
+                <Info/>
+            </File>
+            <File Location="theme-light.png">
+                <Info/>
+            </File>
+        </File>
+        <File Location="server">
+            <Info/>
+            <DIR_SIGNIFIER Location="1">
+                <Info/>
+            </DIR_SIGNIFIER>
+            <File Location="api.go">
+                <Info/>
+            </File>
+            <File Location="api_test.go">
+                <Info/>
+            </File>
+            <File Location="auth.go">
+                <Info/>
+            </File>
+            <File Location="auth_test.go">
+                <Info/>
+            </File>
+            <File Location="go.mod">
+                <Info/>
+            </File>
+            <File Location="go.sum">
+                <Info/>
+            </File>
+            <File Location="integration_test.go">
+                <Info/>
+            </File>
+            <File Location="main.go">
+                <Info/>
+            </File>
+            <File Location="pty.go">
+                <Info/>
+            </File>
+            <File Location="pty_unix.go">
+                <Info/>
+            </File>
+            <File Location="pty_windows.go">
+                <Info/>
+            </File>
+            <File Location="session.go">
+                <Info/>
+            </File>
+            <File Location="shell_unix.go">
+                <Info/>
+            </File>
+            <File Location="shell_windows.go">
+                <Info/>
+            </File>
+            <File Location="websocket.go">
+                <Info/>
+            </File>
+        </File>
+        <File Location="toolbox">
+            <Info/>
+            <DIR_SIGNIFIER Location="1">
+                <Info/>
+            </DIR_SIGNIFIER>
+            <File Location="+internal">
+                <Info/>
+                <DIR_SIGNIFIER Location="1">
+                    <Info/>
+                </DIR_SIGNIFIER>
+                <File Location="TerminalThemes.m">
+                    <Info>
+                        <Category UUID="FileClassCategory">
+                            <Label UUID="design"/>
+                        </Category>
+                    </Info>
+                </File>
+            </File>
+            <File Location="+terminaltools">
+                <Info/>
+                <DIR_SIGNIFIER Location="1">
+                    <Info/>
+                </DIR_SIGNIFIER>
+                <File Location="matlab-editor-tools.json">
+                    <Info/>
+                </File>
+                <File Location="matlab_editor_active.m">
+                    <Info>
+                        <Category UUID="FileClassCategory">
+                            <Label UUID="design"/>
+                        </Category>
+                    </Info>
+                </File>
+                <File Location="matlab_editor_list.m">
+                    <Info>
+                        <Category UUID="FileClassCategory">
+                            <Label UUID="design"/>
+                        </Category>
+                    </Info>
+                </File>
+                <File Location="matlab_editor_read.m">
+                    <Info>
+                        <Category UUID="FileClassCategory">
+                            <Label UUID="design"/>
+                        </Category>
+                    </Info>
+                </File>
+                <File Location="matlab_editor_selection.m">
+                    <Info>
+                        <Category UUID="FileClassCategory">
+                            <Label UUID="design"/>
+                        </Category>
+                    </Info>
+                </File>
+            </File>
+            <File Location="doc">
+                <Info/>
+                <DIR_SIGNIFIER Location="1">
+                    <Info/>
+                </DIR_SIGNIFIER>
+                <File Location="GettingStarted.m">
+                    <Info>
+                        <Category UUID="FileClassCategory">
+                            <Label UUID="design"/>
+                        </Category>
+                    </Info>
+                </File>
+                <File Location="GettingStarted.mlx">
+                    <Info>
+                        <Category UUID="FileClassCategory">
+                            <Label UUID="design"/>
+                        </Category>
+                    </Info>
+                </File>
+                <File Location="Install.m">
+                    <Info>
+                        <Category UUID="FileClassCategory">
+                            <Label UUID="design"/>
+                        </Category>
+                    </Info>
+                </File>
+            </File>
+            <File Location="html">
+                <Info/>
+                <DIR_SIGNIFIER Location="1">
+                    <Info/>
+                </DIR_SIGNIFIER>
+                <File Location="index.html">
+                    <Info>
+                        <Category UUID="FileClassCategory">
+                            <Label UUID="artifact"/>
+                        </Category>
+                    </Info>
+                </File>
+                <File Location="lib">
+                    <Info/>
+                    <DIR_SIGNIFIER Location="1">
+                        <Info/>
+                    </DIR_SIGNIFIER>
+                    <File Location="xterm">
+                        <Info/>
+                        <DIR_SIGNIFIER Location="1">
+                            <Info/>
+                        </DIR_SIGNIFIER>
+                        <File Location="addon-fit.js">
+                            <Info/>
+                        </File>
+                        <File Location="addon-serialize.js">
+                            <Info/>
+                        </File>
+                        <File Location="xterm.css">
+                            <Info/>
+                        </File>
+                        <File Location="xterm.js">
+                            <Info/>
+                        </File>
+                    </File>
+                </File>
+                <File Location="terminal.css">
+                    <Info/>
+                </File>
+            </File>
+            <File Location="images">
+                <Info/>
+                <DIR_SIGNIFIER Location="1">
+                    <Info/>
+                </DIR_SIGNIFIER>
+                <File Location="matlab-terminal.jpeg">
+                    <Info/>
+                </File>
+            </File>
+            <File Location="openTerminal.m">
+                <Info>
+                    <Category UUID="FileClassCategory">
+                        <Label UUID="design"/>
+                    </Category>
+                </Info>
+            </File>
+            <File Location="terminal.m">
+                <Info>
+                    <Category UUID="FileClassCategory">
+                        <Label UUID="design"/>
+                    </Category>
+                </Info>
+            </File>
+            <File Location="terminalVersion.m">
+                <Info>
+                    <Category UUID="FileClassCategory">
+                        <Label UUID="design"/>
+                    </Category>
+                </Info>
+            </File>
+            <File Location="tests">
+                <Info/>
+                <DIR_SIGNIFIER Location="1">
+                    <Info/>
+                </DIR_SIGNIFIER>
+                <File Location="TestTerminalInSimulink.m">
+                    <Info>
+                        <Category UUID="FileClassCategory">
+                            <Label UUID="design"/>
+                        </Category>
+                    </Info>
+                </File>
+                <File Location="TestTerminalIntegration.m">
+                    <Info>
+                        <Category UUID="FileClassCategory">
+                            <Label UUID="design"/>
+                        </Category>
+                    </Info>
+                </File>
+                <File Location="TestTerminalUnit.m">
+                    <Info>
+                        <Category UUID="FileClassCategory">
+                            <Label UUID="design"/>
+                        </Category>
+                    </Info>
+                </File>
+            </File>
+        </File>
+    </Files>
+    <Categories Location="Root">
+        <Category Location="FileClassCategory">
+            <Info DataType="None" Name="Classification" ReadOnly="1" SingleValued="1"/>
+            <Label Location="design">
+                <Info Name="Design" ReadOnly="READ_ONLY"/>
+            </Label>
+            <Label Location="derived">
+                <Info Name="Derived" ReadOnly="READ_ONLY"/>
+            </Label>
+            <Label Location="artifact">
+                <Info Name="Artifact" ReadOnly="READ_ONLY"/>
+            </Label>
+            <Label Location="convenience">
+                <Info Name="Convenience" ReadOnly="READ_ONLY"/>
+            </Label>
+            <Label Location="other">
+                <Info Name="Other" ReadOnly="READ_ONLY"/>
+            </Label>
+            <Label Location="test">
+                <Info Name="Test" ReadOnly="READ_ONLY"/>
+            </Label>
+            <Label Location="none">
+                <Info Name="None" ReadOnly="READ_ONLY"/>
+            </Label>
+        </Category>
+    </Categories>
+    <ProjectPath Location="Root">
+        <Reference Location="45797dce-6c52-47b8-9bee-5116d4ec2047">
+            <Info Ref="toolbox/tests" Type="Relative"/>
+        </Reference>
+        <Reference Location="4ec09c2e-28b6-4919-9cc7-b9b012556cd6">
+            <Info Ref="toolbox" Type="Relative"/>
+        </Reference>
+        <Reference Location="79e85907-748c-4e6a-8124-923bbe311862">
+            <Info Ref="toolbox/doc" Type="Relative"/>
+        </Reference>
+        <Reference Location="a1719178-a592-4d1e-a202-baecb7140448">
+            <Info Ref="build" Type="Relative"/>
+        </Reference>
+    </ProjectPath>
+</project>

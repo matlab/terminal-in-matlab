@@ -73,3 +73,12 @@ jobs:
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
             go build -ldflags="-s -w" \
             -o ../dist/${{ matrix.matlab_arch }}/${{ matrix.binary }} .
+  matlab-tests:
+    needs: build-server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: matlab-actions/setup-matlab@v3
+      - uses: matlab-actions/run-build@v3
+        with:
+          tasks: check test
