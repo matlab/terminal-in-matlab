@@ -39,7 +39,13 @@ jobs:
             read -r goos goarch arch binary <<< "$entry"
             mkdir -p ../dist/$arch
             echo "Building $goos/$goarch -> dist/$arch/$binary"
-            GOOS=$goos GOARCH=$goarch \
+            # CGO_ENABLED=0 forces a statically linked, pure-Go binary with no
+            # libc dependency. Without it, the native linux/amd64 build defaults
+            # to CGO_ENABLED=1 and dynamically links the build host's glibc,
+            # which fails to load on older distros (e.g. "GLIBC_2.34 not found"
+            # on RHEL 8). This server has no cgo, so static linking is safe and
+            # makes the binary portable across Linux distributions.
+            CGO_ENABLED=0 GOOS=$goos GOARCH=$goarch \
               go build -ldflags="-s -w" \
               -o ../dist/$arch/$binary .
           done
