@@ -4,7 +4,7 @@
 %[text] - If Terminal is already installed, the current version is shown and you are asked whether to continue. Press Enter to proceed or type "n" to cancel.
 %[text] - The script downloads Terminal.mltbx from the latest GitHub release.
 %[text] - Any existing Terminal installation is uninstalled first.
-%[text] - The downloaded toolbox is installed using matlab.addons.install.
+%[text] - The downloaded toolbox is installed using mpminstall.
 %[text] - The temporary .mltbx file is deleted after installation.
 %[text] - A Terminal window opens so you can start using it right away. \
 %[text] ## Requirements:
@@ -35,7 +35,7 @@ websave(mltbxFile, url);
 disp("Download complete.");
 
 disp("Installing terminal...");
-matlab.addons.install(mltbxFile);
+mpminstall(mltbxFile);
 delete(mltbxFile);
 disp("Terminal " + terminal.version() + " installed successfully.");
 %%
