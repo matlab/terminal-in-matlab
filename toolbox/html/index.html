@@ -53,6 +53,24 @@
             };
         }
         (function () {
+            var frame = window.frameElement;
+
+            if (frame) {
+                function release() {
+                    frame.style.pointerEvents = 'auto';
+                }
+        
+                frame.addEventListener('pointerenter', function (event) {
+                    if (event.buttons) {
+                        frame.style.pointerEvents = 'none';
+                    }
+                });
+        
+                window.addEventListener('mouseup', release, true);
+                window.addEventListener('pointerup', release, true);
+                window.addEventListener('blur', release, true);
+            }
+
             var dummyMQL = {
                 matches: false, media: '',
                 addListener: function () { }, removeListener: function () { },
